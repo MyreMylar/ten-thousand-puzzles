@@ -276,13 +276,13 @@ for puzzle in cluePuzzles:
             color_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords]]
 
     if puzzle.clueInfo.find("NOT") == -1 and puzzle.clueInfo.find("color") == -1 and puzzle.clueInfo.find("concept") == -1:
-        if pharoahName in has_not_property_pharoahs:
+        if pharoahName in has_property_pharoahs:
             has_property_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords])
         else:
             has_property_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords]]
 
     if puzzle.clueInfo.find("NOT") != -1 :
-        if pharoahName in has_property_pharoahs:
+        if pharoahName in has_not_property_pharoahs:
             has_not_property_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords])
         else:
             has_not_property_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords]]
