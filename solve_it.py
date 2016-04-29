@@ -77,11 +77,12 @@ for folder in os.listdir(puzzle_folder):
   
 cluePuzzles.sort(key=attrgetter('row'))
 
+sizeOfPuzzles = len(cluePuzzles)
 print("finished gathering puzzle info...")
-print("testing puzzles...")
+print("testing " + str(sizeOfPuzzles) + " puzzles...")
 counter = 0
 percentageComplete = 0.0
-sizeOfPuzzles = len(cluePuzzles)
+
 for puzzle in cluePuzzles:
     if (counter / sizeOfPuzzles) > percentageComplete:
         print(str(round((counter / sizeOfPuzzles),2) * 100) + "% complete")
@@ -140,10 +141,6 @@ for puzzle in cluePuzzles:
             viableWord = False
         if viableWord and Helper.runFailTest(word, "consonants", puzzle.consonantSubTest):
             viableWord = False
-        if viableWord and Helper.runFailTest(word, "countryCodeLetters", puzzle.countryCodesSubTest):
-            viableWord = False
-        if viableWord and Helper.runFailTest(word, "chemicalCodeLetters", puzzle.chemicalCodesSubTest):
-            viableWord = False                          
         if viableWord and Helper.runFailTest(word, "bottomQWERTY", puzzle.qwertyBottomRowSubTest):
             viableWord = False
         if viableWord and Helper.runFailTest(word, "middleQWERTY", puzzle.qwertyMiddleRowSubTest):
@@ -178,7 +175,10 @@ for puzzle in cluePuzzles:
                 if word.sh1Hash.find(puzzle.shaHashTest[1]) != 0:
                     viableWord = False
             elif puzzle.shaHashTest[0] == "ends":
-                if word.sh1Hash.rfind(puzzle.shaHashTest[1]) != (len(word.sh1Hash) - len(puzzle.shaHashTest[1])):
+                if (len(word.sh1Hash) >= len(puzzle.shaHashTest[1])):
+                    if word.sh1Hash.rfind(puzzle.shaHashTest[1]) != (len(word.sh1Hash) - len(puzzle.shaHashTest[1])):
+                        viableWord = False
+                else:
                     viableWord = False
             elif puzzle.shaHashTest[0] == "contains":
                 if word.sh1Hash.find(puzzle.shaHashTest[1]) == -1:
@@ -219,7 +219,10 @@ for puzzle in cluePuzzles:
             if (word.twoOfTheSameDoubleLetter != puzzle.atLeastTwoSameDLTest[0]):
                 viableWord = False        
 
-        if viableWord:
+        hasAnagramTest = ((len(puzzle.oneOffAnagTest) > 0) or (len(puzzle.twoOffAnagTest) > 0) or (len(puzzle.fullAnagTest) > 0))
+        hasDatabaseTest = (len(puzzle.smallWordsSubTest) > 0) or (len(puzzle.stateCodesSubTest) > 0) or (len(puzzle.countryCodesSubTest) > 0) or (len(puzzle.chemicalCodesSubTest) > 0)
+        hasHardDataTest = hasAnagramTest or hasDatabaseTest or (len(puzzle.ceaserCipherTest) > 0)
+        if viableWord and hasHardDataTest:
             if not word.hasCalculatedHardData:
                 word.calculateHardData(wordsByCompareLength)
 
@@ -240,10 +243,75 @@ for puzzle in cluePuzzles:
                              
             if viableWord and Helper.runFailTest(word, "stateCodes", puzzle.stateCodesSubTest):
                 viableWord = False
+
+            if viableWord and Helper.runFailTest(word, "countryCodeLetters", puzzle.countryCodesSubTest):
+                viableWord = False
+                
+            if viableWord and Helper.runFailTest(word, "chemicalCodeLetters", puzzle.chemicalCodesSubTest):
+                viableWord = False                          
+
                 
             if viableWord and len(puzzle.ceaserCipherTest) > 0:
                 if puzzle.ceaserCipherTest[0] != word.foundCeaserShift:
                     viableWord = False
+
+        if viableWord and len(puzzle.hasPropertiesTests) > 0:
+            for test in puzzle.hasPropertiesTests:
+                if test[0] == "ABUSIR":
+                    if (word.word.find("ex") == 0) != test[1]:
+                        viableWord = False
+                elif test[0] == "QAKAREIBI":
+                    if (word.word.find("b") == 0) != test[1]:
+                        viableWord = False
+                elif test[0] == "AMENEMHAT":
+                    if (word.word.find("u") == 0) != test[1]:
+                        viableWord = False
+
+                elif test[0] == "DJOSER":
+                    if (word.word.find("ch") != -1) != test[1]:
+                        viableWord = False
+                elif test[0] == "BIKHERIS":
+                    if (word.word.find("sh") != -1) != test[1]:
+                        viableWord = False
+                elif test[0] == "LISHT":
+                    if (word.word.find("y") != -1) != test[1]:
+                        viableWord = False
+
+                elif test[0] == "KHUI":
+                    if (word.word[-1] == 's') != test[1]:
+                        viableWord = False
+
+                elif test[0] == "AMENYQEMAU":
+                    if (word.word[0] == word.word[-1]) != test[1]:
+                        viableWord = False
+
+                elif test[0] == "MAZGHUNA":
+                    if word.atLeastOneDoubleLetter != test[1]:
+                        viableWord = False
+
+                elif test[0] == "SETHKA":
+                    endsInEd = (word.length >= 2 and word.word[-2] == 'e' and word.word[-1] == 'd')
+                    endsInIng = (word.length >= 3 and word.word[-3] == 'i' and word.word[-2] == 'n' and word.word[-2] == 'g')
+                    if (endsInEd or endsInIng) != test[1]:
+                        viableWord = False
+
+                elif test[0] == "HAWARA":
+                    if word.testableValues["commonestConsonants"][0] < 3:
+                        viableWord = False
+                elif test[0] == "PEPI":
+                    if word.testableValues["commonestVowels"][0] < 3:
+                        viableWord = False
+
+                elif test[0] == "NEFEREFRE":
+                    if word.testableValues["topQWERTY"][0] != word.length:
+                        viableWord = False
+                    
+
+                else:
+                    puzzle.asterixForUnrunPropertyTest = "*"
+                            
+                            
+            
                     
 
         if viableWord:
@@ -265,27 +333,27 @@ for puzzle in cluePuzzles:
 
     if puzzle.clueInfo.find("concept") != -1 :
         if pharoahName in concept_pharoahs:
-            concept_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords])
+            concept_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest])
         else:
-            concept_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords]]
+            concept_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest]]
 
     if puzzle.clueInfo.find("color") != -1 :
         if pharoahName in color_pharoahs:
-            color_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords])
+            color_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest])
         else:
-            color_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords]]
+            color_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest]]
 
     if puzzle.clueInfo.find("NOT") == -1 and puzzle.clueInfo.find("color") == -1 and puzzle.clueInfo.find("concept") == -1:
         if pharoahName in has_property_pharoahs:
-            has_property_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords])
+            has_property_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest])
         else:
-            has_property_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords]]
+            has_property_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest]]
 
     if puzzle.clueInfo.find("NOT") != -1 :
         if pharoahName in has_not_property_pharoahs:
-            has_not_property_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords])
+            has_not_property_pharoahs[pharoahName].append([puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest])
         else:
-            has_not_property_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords]]
+            has_not_property_pharoahs[pharoahName] = [[puzzleLocation,puzzle.viableWords,puzzle.asterixForUnrunPropertyTest]]
 
 errors_list = []
 print("Concepts")
@@ -295,11 +363,12 @@ for pharoah in concept_pharoahs:
     for viableWordList in concept_pharoahs[pharoah]:
         if len(viableWordList[1]) == 1:
             for word in viableWordList[1]:
-                associated_words.append(word.word.upper())
+                associated_words.append(word.word.upper() + viableWordList[2])
         else:
             errors_list.append([pharoah,viableWordList])
 
-    print("[B]" + pharoah.upper() + "[\\B]: " + str(associated_words) + "\n")
+    associated_words.sort(key=len)
+    print("[B]" + pharoah.upper() + "[/B]: " + str(associated_words) + "\n")
     
 
 print("Colors")
@@ -309,11 +378,12 @@ for pharoah in color_pharoahs:
     for viableWordList in color_pharoahs[pharoah]:
         if len(viableWordList[1]) == 1:
             for word in viableWordList[1]:
-                associated_words.append(word.word.upper())
+                associated_words.append(word.word.upper() + viableWordList[2])
         else:
             errors_list.append([pharoah,viableWordList])
 
-    print("[B]" + pharoah.upper() + "[\\B]: " + str(associated_words) + "\n")
+    associated_words.sort(key=len)
+    print("[B]" + pharoah.upper() + "[/B]: " + str(associated_words) + "\n")
 
 print("Has property:")
 print("---------------------------\n")
@@ -322,11 +392,12 @@ for pharoah in has_property_pharoahs:
     for viableWordList in has_property_pharoahs[pharoah]:
         if len(viableWordList[1]) == 1:
             for word in viableWordList[1]:
-                associated_words.append(word.word.upper())
+                associated_words.append(word.word.upper() + viableWordList[2])
         else:
             errors_list.append([pharoah,viableWordList])
 
-    print("[B]" + pharoah.upper() + "[\\B]: " + str(associated_words) + "\n")
+    associated_words.sort(key=len)
+    print("[B]" + pharoah.upper() + "[/B]: " + str(associated_words) + "\n")
 
 print("Does not Have property:")
 print("---------------------------\n")
@@ -335,16 +406,17 @@ for pharoah in has_not_property_pharoahs:
     for viableWordList in has_not_property_pharoahs[pharoah]:
         if len(viableWordList[1]) == 1:
             for word in viableWordList[1]:
-                associated_words.append(word.word.upper())
+                associated_words.append(word.word.upper() + viableWordList[2])
         else:
             errors_list.append([pharoah,viableWordList])
 
-    print("[B]" + pharoah.upper() + "[\\B]: " + str(associated_words) + "\n")
+    associated_words.sort(key=len)
+    print("[B]" + pharoah.upper() + "[/B]: " + str(associated_words) + "\n")
 
-print("/n/nErrors")
+print("\n\nErrors")
 print("---------------------------\n")
 
 for error in errors_list:
-        print(error[0] + " : " + error[1][0] + " - " + str([word.word.upper() for word in error[1][1]]))
+        print(error[0] + " : " + error[1][0] + " - " + str([word.word.upper() for word in error[1][1]]) + " " + error[1][2])
 
 
