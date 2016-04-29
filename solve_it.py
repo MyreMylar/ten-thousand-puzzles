@@ -305,6 +305,50 @@ for puzzle in cluePuzzles:
                 elif test[0] == "NEFEREFRE":
                     if word.testableValues["topQWERTY"][0] != word.length:
                         viableWord = False
+
+                elif test[0] == "UNAS":
+                    if word.distinctVowels != 5:
+                        viableWord = False
+
+                elif test[0] == "MERENRE":
+                    isLastLetterVowel = word.isLetterVowel(word.word[0])
+                    if word.length > 1:
+                        for index in range(1, word.length):
+                            isCurrentLetterVowel = word.isLetterVowel(word.word[index])
+                            if isLastLetterVowel == isCurrentLetterVowel:
+                                viableWord = False
+                                break
+                            else:
+                                isLastLetterVowel = isCurrentLetterVowel
+
+                elif test[0] == "NURI":
+                    if word.length > 1:
+                        if not (word.word[0] == word.word[-2]) and (word.word[1] == word.word[-1]):
+                            viableWord = False
+                    else:
+                        viableWord = False
+
+                elif test[0] == "MENKAURE":
+                    lastValue = 0
+                    for letter in word.word:
+                        currentValue = (ord(letter) - 96)
+                        if currentValue < lastValue:
+                            viableWord = False
+                            break
+                        else:
+                            lastValue = currentValue
+
+                elif test[0] == "MEIDUM":
+                    if word.distinctVowels != 1:
+                        viableWord = False
+
+                elif test[0] == "SOBEKNEFERU":
+                    if word.vowelPercentage < 0.5:
+                        viableWord = False
+                    
+                        
+                    
+                            
                     
 
                 else:

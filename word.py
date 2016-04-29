@@ -10,21 +10,11 @@ class Word:
 
         self.short_words_database = short_words_database
         self.state_codes_database = state_codes_database
+        self.country_codes_database = country_codes_database
+        self.chemical_symbols_database = chemical_symbols_database
+        
         self.ceaser_translations = ceaser_translations
-        #start debug variables
-        self.sorted_codes = []
-        self.found_country_codes = []
-        self.countryCodes = []
-        self.chemicalCodes = []
-        self.sorted_chemical_codes = []
-        self.sorted_short_words = []
-        self.valid_short_word_sets = []
-        self.valid_state_codes_sets = []
-        self.fullAnagrams = []
-        self.twoOffAnagrams = []
-        self.found_double_letters = []
-        #end debug variables
-
+  
         self.wordList = wordList
         self.word = word.lower()
         self.counterWord = Counter(self.word)
@@ -67,15 +57,11 @@ class Word:
         
         self.findDoubleLetters()
         self.calculateLetterPercentagesAndTotals() 
-        self.findCountryCodes(country_codes_database)
-        self.findChemicalCodes(chemical_symbols_database)
-        
+  
         self.testableValues["length"] = [len(self.word), 1.0]
         self.testableValues["vowels"] = [self.vowelTotal, self.vowelPercentage]
         self.testableValues["consonants"] = [self.consonantTotal, self.consonantPercentage]
         self.testableValues["commonestLetters"] = [self.commonestLettersTotal, self.commonestLettersPercentage]
-        self.testableValues["countryCodeLetters"] = [self.numberOfCountryCodeLetters, self.countryCodesPercentage]
-        self.testableValues["chemicalCodeLetters"] = [self.numberOfChemicalCodesLetters, self.chemicalCodesPercentage]
         self.testableValues["distinctVowels"] = [self.distinctVowels, self.distinctVowels/self.length]
         self.testableValues["distinctConsonants"] = [self.distinctConsonants, self.distinctConsonants/self.length]
         self.testableValues["distinctLetters"] = [self.distinctLetters, self.distinctLetters/self.length]
@@ -92,6 +78,8 @@ class Word:
         self.calculateHasAnagrams(wordsInSizeRange)
         self.findShortWords()
         self.findStateCodes(self.state_codes_database)
+        self.findCountryCodes(self.country_codes_database)
+        self.findChemicalCodes(self.chemical_symbols_database)
         self.findCeaserShifts(wordsInSizeRange)
         self.hasCalculatedHardData = True
 
@@ -99,7 +87,7 @@ class Word:
         for translation in self.ceaser_translations:
             shifted_word = str.translate(self.word, translation)
             for word in wordsInSizeRange[self.length]:
-                if word == shifted_word:
+                if word.word == shifted_word:
                     self.foundCeaserShift = True
                     break
                     
@@ -112,12 +100,14 @@ class Word:
                          'uu','vv','ww','xx','yy',
                          'zz']
 
+        found_double_letters = []
+        
         for doubleLetter in doubleLetters:
             found_occurances = [pos.start() for pos in re.finditer(doubleLetter, self.word)]
             for occurance in found_occurances:
-                self.found_double_letters.append(doubleLetter)
+                found_double_letters.append(doubleLetter)
 
-        doubleCounter = Counter(self.found_double_letters)
+        doubleCounter = Counter(found_double_letters)
 
         self.atLeastOneDoubleLetter = len(doubleCounter) > 0
         self.atLeastTwoDoubleLetters = len(doubleCounter) > 1
@@ -147,8 +137,6 @@ class Word:
                 break
             elif word.word != self.word:
                 hasFullAnag = not (self.counterWord - word.counterWord)
-                if hasFullAnag:
-                    self.fullAnagrams.append(word)
  
         if self.length+1 < len(wordsInSizeRange):
             for word in wordsInSizeRange[self.length+1]:
@@ -156,7 +144,7 @@ class Word:
                     break
                 else:
                     hasOneOffAnag = not(self.counterWord - word.counterWord)
-            
+
         if self.length+2 < len(wordsInSizeRange):
             for word in wordsInSizeRange[self.length+2]:
                 
@@ -164,8 +152,6 @@ class Word:
                     break
                 else:
                     hasTwoOffAnag = not(self.counterWord - word.counterWord)
-                    if hasTwoOffAnag:
-                        self.twoOffAnagrams.append(word)
 
         self.hasFullAnag = hasFullAnag
         self.hasOneOffAnag = hasOneOffAnag
@@ -226,6 +212,10 @@ class Word:
                       'v': 4, 'w': 4, 'x': 8, 'y': 4, 'z': 10}
         return sum(value_list[char] for char in self.word)
 
+    def isLetterVowel(self, letter):
+        vowels = ['a','e','i','o','u']
+        return letter in vowels
+    
     def calculateLetterPercentagesAndTotals(self):
         vowels = ['a','e','i','o','u']
         self.distinctLetters = len(self.counterWord)
@@ -260,41 +250,53 @@ class Word:
         self.testableValues["commonestConsonants"] = [most_common_consonant_value, most_common_consonant_value / len(self.word)]
 
     def findCountryCodes(self, country_codes_database):
-        
+        found_country_codes = []
         for code in country_codes_database:
             found_occurances = [pos.start() for pos in re.finditer(code, self.word)]
             for occurance in found_occurances:
-                self.found_country_codes.append([code,occurance])
+                found_country_codes.append([code,occurance])
 
+        country_code_powerset = self.powerset(found_country_codes)
 
-        overlap_dict = []
-        for code in self.found_country_codes:
-            overlaps = []
-            for other_code in self.found_country_codes:
-                if code[1] != other_code[1]:
-                    if abs(code[1] - other_code[1]) == 1:
-                        overlaps.append(other_code[0])
-            overlap_dict.append([code[0],overlaps,len(overlaps), -len(code[0])])
+        valid_country_codes = []
+        for subset in country_code_powerset:
+            noOverlaps = True
+            for occuranceA in subset:
+                if noOverlaps:
+                    for occuranceB in subset:
+                        if noOverlaps:
+                            if occuranceA[0] == occuranceB[0] and occuranceA[1] == occuranceB[1]:
+                                pass
+                            else:
+                                posDiff = occuranceA[1] - occuranceB[1]
+                                if posDiff == 0:
+                                    noOverlaps = False
+                                elif posDiff < 0 and len(occuranceA[0]) > abs(posDiff):
+                                    noOverlaps = False
+                                elif posDiff > 0 and len(occuranceB[0]) > posDiff:
+                                    noOverlaps = False
+                        else:
+                            break
+                else:
+                    break
+            if noOverlaps:
+                valid_country_codes.append(subset)    
 
-        self.sorted_codes = sorted(overlap_dict, key=operator.itemgetter(3,2))
-
-        self.countryCodes = []
-        for code in self.sorted_codes:
-            if code[2] == 0:
-                self.countryCodes.append(code[0])
-            else:
-                hasNoOverlaps = True
-                for overlapCode in code[1]:
-                    for otherCode in self.countryCodes:
-                        if overlapCode == otherCode:
-                            hasNoOverlaps = False
-                if hasNoOverlaps:
-                    self.countryCodes.append(code[0])
-        joinedString = ""
-        for code in self.countryCodes:
-            joinedString += code
-        self.numberOfCountryCodeLetters = len(joinedString)
-        self.countryCodesPercentage = self.numberOfCountryCodeLetters / len(self.word)               
+       
+        longestPotentialWord = []
+        maxLength = 0
+        for subset in valid_country_codes:
+            totalWordLength = 0
+            for word in subset:
+                totalWordLength += len(word[0])
+            if totalWordLength > maxLength:
+                maxLength = totalWordLength
+                longestPotentialWord = subset 
+                    
+        self.numberOfCountryCodeLetters = maxLength
+        self.countryCodesPercentage = self.numberOfCountryCodeLetters / len(self.word)
+        self.testableValues["countryCodeLetters"] = [self.numberOfCountryCodeLetters, self.countryCodesPercentage]
+               
 
     def findChemicalCodes(self, chemical_symbols_database):
         found_chemical_codes = []
@@ -303,43 +305,47 @@ class Word:
             for occurance in found_occurances:
                 found_chemical_codes.append([code,occurance])
 
+        chemical_code_powerset = self.powerset(found_chemical_codes)
 
-        overlap_dict = []
-        for code in found_chemical_codes:
-            overlaps = []
-            for other_code in found_chemical_codes:
-                if code[0] == other_code[0] and code[1] == other_code[1]:
-                    pass #don't add self to overlaps
+        valid_chemical_codes = []
+        for subset in chemical_code_powerset:
+            noOverlaps = True
+            for occuranceA in subset:
+                if noOverlaps:
+                    for occuranceB in subset:
+                        if noOverlaps:
+                            if occuranceA[0] == occuranceB[0] and occuranceA[1] == occuranceB[1]:
+                                pass
+                            else:
+                                posDiff = occuranceA[1] - occuranceB[1]
+                                if posDiff == 0:
+                                    noOverlaps = False
+                                elif posDiff < 0 and len(occuranceA[0]) > abs(posDiff):
+                                    noOverlaps = False
+                                elif posDiff > 0 and len(occuranceB[0]) > posDiff:
+                                    noOverlaps = False
+                        else:
+                            break
                 else:
-                    if code[1] == other_code[1]:
-                        overlaps.append(other_code[0])
-                    if len(other_code[0]) == 2 and code[1] - other_code[1] == 1:
-                        overlaps.append(other_code[0])
-                    if len(code[0]) == 2 and other_code[1] - code[1] == 1:
-                        overlaps.append(other_code[0])
-            overlap_dict.append([code[0],overlaps,len(overlaps), -len(code[0])])
+                    break
+            if noOverlaps:
+                valid_chemical_codes.append(subset)    
 
-        
-        self.sorted_chemical_codes = sorted(overlap_dict, key=operator.itemgetter(3,2))
-
-        chemicalCodes = []
-        for code in self.sorted_chemical_codes:
-            if code[2] == 0:
-                chemicalCodes.append(code[0])
-            else:
-                hasNoOverlaps = True
-                for overlapCode in code[1]:
-                    for otherCode in chemicalCodes:
-                        if overlapCode == otherCode:
-                            hasNoOverlaps = False
-                if hasNoOverlaps:
-                    chemicalCodes.append(code[0])
-        self.chemicalCodes = chemicalCodes
-        joinedString = ""
-        for code in chemicalCodes:
-            joinedString += code
-        self.numberOfChemicalCodesLetters = len(joinedString)
+       
+        longestPotentialWord = []
+        maxLength = 0
+        for subset in valid_chemical_codes:
+            totalWordLength = 0
+            for word in subset:
+                totalWordLength += len(word[0])
+            if totalWordLength > maxLength:
+                maxLength = totalWordLength
+                longestPotentialWord = subset 
+                    
+        self.numberOfChemicalCodesLetters = maxLength
         self.chemicalCodesPercentage = self.numberOfChemicalCodesLetters / len(self.word)
+        self.testableValues["chemicalCodeLetters"] = [self.numberOfChemicalCodesLetters, self.chemicalCodesPercentage]
+
         
     def findStateCodes(self, state_codes_database):
         found_state_codes = []
@@ -350,7 +356,7 @@ class Word:
 
         state_codes_powerset = self.powerset(found_state_codes)
 
-        
+        valid_state_codes_sets = []
         for subset in state_codes_powerset:
             noOverlaps = True
             for occuranceA in subset:
@@ -372,12 +378,12 @@ class Word:
                 else:
                     break
             if noOverlaps:
-                self.valid_state_codes_sets.append(subset)    
+                valid_state_codes_sets.append(subset)    
 
        
         longestPotentialWord = []
         maxLength = 0
-        for subset in self.valid_state_codes_sets:
+        for subset in valid_state_codes_sets:
             totalWordLength = 0
             for word in subset:
                 totalWordLength += len(word[0])
@@ -396,7 +402,7 @@ class Word:
 
         short_word_powerset = self.powerset(found_short_words)
 
-        
+        valid_short_word_sets = []
         for subset in short_word_powerset:
             noOverlaps = True
             for occuranceA in subset:
@@ -418,12 +424,12 @@ class Word:
                 else:
                     break
             if noOverlaps:
-                self.valid_short_word_sets.append(subset)    
+                valid_short_word_sets.append(subset)    
 
        
         longestPotentialWord = []
         maxLength = 0
-        for subset in self.valid_short_word_sets:
+        for subset in valid_short_word_sets:
             totalWordLength = 0
             for word in subset:
                 totalWordLength += len(word[0])
