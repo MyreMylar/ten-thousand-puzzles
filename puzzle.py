@@ -6,8 +6,7 @@ class Puzzle:
         self.col = col
         self.clueInfo = clueInfo
 
-        self.hasProperty = ""
-        self.hasPropertyValue = []
+        self.hasPropertiesTests = []
 
         self.viableWords = []
 
@@ -64,6 +63,8 @@ class Puzzle:
 
         self.ceaserCipherTest = []
 
+        self.asterixForUnrunPropertyTest = ""
+
         self.contains = ""
 
 
@@ -74,8 +75,8 @@ def parsePuzzleData( lines, puzzleFileName, onlyClues, onlyHasPropertyPuzzles, p
     colNumber = puzzleFileName.split('.')[0].split('_')[1].strip('col')
     answerClue = ""
     shouldClueNextLine = False
-    hasProperty = ""
-    hasPropertyValue = []
+
+    hasPropertiesTests = []
     hasSumTotalTest = False
     sumTotal = 0
     hasRangeTotalTest = False
@@ -144,9 +145,9 @@ def parsePuzzleData( lines, puzzleFileName, onlyClues, onlyHasPropertyPuzzles, p
             if line.find("Has property") != -1:
                 hasProperty = line.split(':')[0].split()[-1]
                 if line.split(':')[1].split()[0] == "YES":
-                    hasPropertyValue = [True]
+                    hasPropertiesTests.append([hasProperty,True])
                 elif line.split(':')[1].split()[0] == "NO":
-                    hasPropertyValue = [False]
+                    hasPropertiesTests.append([hasProperty,False])
             elif line.find("Contains:") != -1:
                 contains = line.split(':')[1].split()[0].lower()
             elif line.find("Sum of letters") != -1:
@@ -334,8 +335,7 @@ def parsePuzzleData( lines, puzzleFileName, onlyClues, onlyHasPropertyPuzzles, p
     if shouldAddPuzzle:
         puzzle = Puzzle(int(rowNumber),int(colNumber),answerClue)
 
-        puzzle.hasProperty = hasProperty
-        puzzle.hasPropertyValue = hasPropertyValue
+        puzzle.hasPropertiesTests = hasPropertiesTests
         
         puzzle.hasSumTotalTest = hasSumTotalTest
         puzzle.sumTotal = sumTotal
